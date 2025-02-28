@@ -40,7 +40,8 @@ type Save struct {
 
 // New returns a fully populated & ready for action Site
 func New() *Site {
-	db := sqlite.New("vore.db?_pragma=journal_mode(WAL)")
+	os.Mkdir("data", 0700)
+	db := sqlite.New("data/vore.db?_pragma=journal_mode(WAL)")
 	s := Site{
 		title:  "vore",
 		reaper: reaper.New(db),
