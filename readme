@@ -17,6 +17,11 @@
     - no unread indicators or push notifs
     - no comments, upvotes, or ranks
 
+  fork changes:
+    - create database files in a `data` subdirectory.
+    - add a DockerFile (this and the above make it possible to use in
+      docker-compose and back up the database files.
+
   dev notes
     - vore should always trust websites as the source of authority
       this is why posts aren't saved to disk - there's no good way to
