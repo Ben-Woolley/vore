@@ -18,7 +18,7 @@
     - no comments, upvotes, or ranks
 
   fork changes:
-    - create database files in a `data` subdirectory.
+    - create database files in a `data` subdirectory (the directory must exist before running).
     - add a DockerFile (this and the above make it possible to use in
       docker-compose and back up the database files.
 
