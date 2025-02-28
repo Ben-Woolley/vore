@@ -4,4 +4,5 @@ COPY . .
 RUN go build .
 RUN chmod +x vore
 EXPOSE 5544
+RUN mkdir -p data
 ENTRYPOINT ["./vore"]
