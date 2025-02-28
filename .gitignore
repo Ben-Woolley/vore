@@ -2,3 +2,5 @@ vore
 vore.db*
 go_test.db
 
+.idea
+data/
