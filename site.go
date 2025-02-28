@@ -40,6 +40,7 @@ type Save struct {
 
 // New returns a fully populated & ready for action Site
 func New() *Site {
+	os.Mkdir("data", 0700)
 	// pragmas:
 	// - journal_mode=WAL: enable write-ahead log for concurrency & perf
 	// - foreign_keys=ON: need foreign keyz
