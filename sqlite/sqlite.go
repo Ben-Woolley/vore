@@ -346,3 +346,32 @@ func (db *DB) BatchSubscribe(username string, feedURLs []string) error {
 
 	return tx.Commit()
 }
+
+func (db *DB) MarkItemRead(username string, itemURL string) error {
+	uid := db.GetUserID(username)
+	_, err := db.sql.Exec(`
+		INSERT INTO read_item(user_id, item_url) 
+		VALUES(?, ?) 
+		ON CONFLICT(user_id, item_url) DO NOTHING`, uid, itemURL)
+	return err
+}
+
+func (db *DB) GetUserReadItems(username string) map[string]bool {
+	uid := db.GetUserID(username)
+	rows, err := db.sql.Query("SELECT item_url FROM read_item WHERE user_id = ?", uid)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	readItems := make(map[string]bool)
+	for rows.Next() {
+		var itemURL string
+		err = rows.Scan(&itemURL)
+		if err != nil {
+			log.Fatal(err)
+		}
+		readItems[itemURL] = true
+	}
+	return readItems
+}

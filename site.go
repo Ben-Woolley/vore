@@ -177,12 +177,20 @@ func (s *Site) userHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	items := s.reaper.TrimFuturePosts(s.reaper.SortFeedItemsByDate(s.reaper.GetUserFeeds(username)))
+	
+	var readItems map[string]bool
+	if s.loggedIn(r) {
+		readItems = s.db.GetUserReadItems(s.username(r))
+	}
+	
 	data := struct {
-		User  string
-		Items []*rss.Item
+		User      string
+		Items     []*rss.Item
+		ReadItems map[string]bool
 	}{
-		User:  username,
-		Items: items,
+		User:      username,
+		Items:     items,
+		ReadItems: readItems,
 	}
 
 	s.renderPage(w, r, "user", data)
@@ -578,6 +586,28 @@ func (s *Site) settingsSubmitRedirectHandler(w http.ResponseWriter, r *http.Requ
 
 func (s *Site) savesRedirectHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/archive", http.StatusMovedPermanently)
+}
+
+func (s *Site) readHandler(w http.ResponseWriter, r *http.Request) {
+	if !s.loggedIn(r) {
+		s.renderErr(w, "", http.StatusUnauthorized)
+		return
+	}
+
+	username := s.username(r)
+	encodedURL := r.PathValue("url")
+	decodedURL, err := url.QueryUnescape(encodedURL)
+	if err != nil {
+		s.renderErr(w, "invalid url", http.StatusBadRequest)
+		return
+	}
+
+	err = s.db.MarkItemRead(username, decodedURL)
+	if err != nil {
+		log.Println("error marking item read:", err)
+	}
+
+	http.Redirect(w, r, decodedURL, http.StatusSeeOther)
 }
 
 func (s *Site) randomCutePhrase() string {

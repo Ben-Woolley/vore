@@ -39,6 +39,14 @@ ul li {
   font-size: 1.1rem;
 }
 
+ul li.read a {
+  color: #8B5A9B;
+}
+
+ul li.read a:visited {
+  color: #8B5A9B;
+}
+
 nav a {
   color: #000;
 }
@@ -86,5 +94,13 @@ nav .right {
 
   .puny {
     color: #a0a0a0;
+  }
+
+  ul li.read a {
+    color: #B894D1;
+  }
+
+  ul li.read a:visited {
+    color: #B894D1;
   }
 }
