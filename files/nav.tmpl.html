@@ -5,6 +5,9 @@
 			vore.website
 		</a>
 	</h2>
+	<div class="changelog-marquee">
+		<marquee><a href="/changelog">✨ NEW: purple read tracking! settings→feeds! saves→archive! click for details ✨</a></marquee>
+	</div>
 	{{ if .LoggedIn }}
 	<a {{ if eq .Title "user" }}style="font-weight: bold;"{{ end }} href="/{{ .Username }}">home</a>
 	| <a {{ if eq .Title "archive" }}style="font-weight: bold;"{{ end }} href="/archive">archive</a>

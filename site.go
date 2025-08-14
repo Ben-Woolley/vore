@@ -610,6 +610,10 @@ func (s *Site) readHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, decodedURL, http.StatusSeeOther)
 }
 
+func (s *Site) changelogHandler(w http.ResponseWriter, r *http.Request) {
+	s.renderPage(w, r, "changelog", nil)
+}
+
 func (s *Site) randomCutePhrase() string {
 	phrases := []string{
 		"nom nom posts (๑ᵔ⤙ᵔ๑)",
