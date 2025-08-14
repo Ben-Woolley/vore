@@ -207,7 +207,7 @@ func (s *Site) settingsHandler(w http.ResponseWriter, r *http.Request) {
 
 	var feeds []*rss.Feed
 	feeds = s.reaper.GetUserFeeds(s.username(r))
-	s.renderPage(w, r, "settings", feeds)
+	s.renderPage(w, r, "feeds", feeds)
 }
 
 // TODO: show diff before submission (like tf plan)
@@ -263,7 +263,7 @@ func (s *Site) settingsSubmitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	http.Redirect(w, r, "/feeds", http.StatusSeeOther)
 }
 
 func (s *Site) feedDetailsHandler(w http.ResponseWriter, r *http.Request) {
@@ -566,6 +566,14 @@ func (s *Site) renderErr(w http.ResponseWriter, error string, code int) {
 	}
 	log.Println(prefix + error)
 	http.Error(w, prefix+error, code)
+}
+
+func (s *Site) settingsRedirectHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/feeds", http.StatusMovedPermanently)
+}
+
+func (s *Site) settingsSubmitRedirectHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/feeds/submit", http.StatusMovedPermanently)
 }
 
 func (s *Site) randomCutePhrase() string {

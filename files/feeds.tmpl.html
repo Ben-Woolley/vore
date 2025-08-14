@@ -1,12 +1,12 @@
-{{ define "settings" }}
+{{ define "feeds" }}
 {{ template "head" . }}
 {{ template "nav" . }}
-<h3>Settings</h3>
+<h3>Feeds</h3>
 <p>your public homepage: <a href="/{{ .Username }}">vore.website/{{ .Username }}</a>
 
-{{ len .Data }} subscriptions:
+subscribed to {{ len .Data }} feeds:
 </p>
-<form method="POST" action="/settings/submit">
+<form method="POST" action="/feeds/submit">
 <textarea name="submit" rows="10" cols="50">
 {{ range .Data -}}
 {{ .UpdateURL }}
