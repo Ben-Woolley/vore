@@ -196,7 +196,7 @@ func (s *Site) userSavesHandler(w http.ResponseWriter, r *http.Request) {
 
 	username := s.username(r)
 	saves := s.db.GetUserSavedItems(username)
-	s.renderPage(w, r, "saves", saves)
+	s.renderPage(w, r, "archive", saves)
 }
 
 func (s *Site) settingsHandler(w http.ResponseWriter, r *http.Request) {
@@ -574,6 +574,10 @@ func (s *Site) settingsRedirectHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Site) settingsSubmitRedirectHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/feeds/submit", http.StatusMovedPermanently)
+}
+
+func (s *Site) savesRedirectHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/archive", http.StatusMovedPermanently)
 }
 
 func (s *Site) randomCutePhrase() string {

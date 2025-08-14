@@ -10,7 +10,7 @@ func main() {
 
 	http.HandleFunc("GET /{$}", s.indexHandler)
 	http.HandleFunc("GET /{username}", s.userHandler)
-	http.HandleFunc("GET /saves", s.userSavesHandler)
+	http.HandleFunc("GET /archive", s.userSavesHandler)
 	http.HandleFunc("GET /static/{file}", s.staticHandler)
 	http.HandleFunc("GET /finger", s.fingerHandler)
 	http.HandleFunc("POST /finger", s.fingerHandler)
@@ -24,9 +24,10 @@ func main() {
 	http.HandleFunc("GET /save/{url}", s.saveHandler)
 	http.HandleFunc("GET /feeds/{url}", s.feedDetailsHandler)
 
-	// backwards compatibility redirect
+	// backwards compatibility redirects
 	http.HandleFunc("GET /settings", s.settingsRedirectHandler)
 	http.HandleFunc("POST /settings/submit", s.settingsSubmitRedirectHandler)
+	http.HandleFunc("GET /saves", s.savesRedirectHandler)
 
 	log.Println("main: listening on http://localhost:5544")
 	log.Fatal(http.ListenAndServe(":5544", nil))

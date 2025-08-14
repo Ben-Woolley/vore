@@ -1,26 +1,26 @@
-{{ define "saves" }}
+{{ define "archive" }}
 {{ template "head" . }}
 {{ template "nav" . }}
 
 {{ $length := len .Data }} {{ if eq $length 0 }}
 {{ if .LoggedIn }}
 <p>
-you haven't saved anything yet. :(
+you haven't archived anything yet. :(
 
-use the "save" button to save posts that you like!
+use the "archive" button to archive posts that you like!
 
-vore's save system is unique:
-  when you click the "save" button, vore will:
+vore's archive system is unique:
+  when you click the "archive" button, vore will:
     - submit an https://archive.org request on your behalf for the linked page
     - store the article + archive link together
 
-this ensures that all saved articles will remain
+this ensures that all archived articles will remain
 accessible forever!
 
-it also means that you may save the same article
+it also means that you may archive the same article
 more than once, if you'd like!
 
-currently, saves cannot be deleted.
+currently, archived items cannot be deleted.
 </p>
 {{ end }}
 {{ end }}
@@ -32,7 +32,7 @@ currently, saves cannot be deleted.
 		(<a href="{{ .ArchiveURL }}">archived</a>)
 	</span>
 	<br>
-	<span class=puny>saved {{ .CreatedAt }} via <a href="//{{ .ItemURL | printDomain }}">{{ .ItemURL | printDomain }}</a></span>
+	<span class=puny>archived {{ .CreatedAt }} via <a href="//{{ .ItemURL | printDomain }}">{{ .ItemURL | printDomain }}</a></span>
 	</li>
 {{ end }}
 </ul>

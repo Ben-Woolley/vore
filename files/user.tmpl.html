@@ -25,7 +25,7 @@ go to <a href="/feeds">/feeds</a> to add your first feed!
 		| <a href="#"
 			data-save-url="/save/{{ .Link | escapeURL }}"
 			onclick="saveItem(this); return false;">
-			save
+			archive
 		</a>
 	</span>
 	</li>
@@ -39,7 +39,7 @@ function saveItem(element) {
   let index = 0;
 
   const intervalId = setInterval(() => {
-    element.textContent = "saving" + states[index];
+    element.textContent = "archiving" + states[index];
     index = (index + 1) % states.length;
   }, 300);
 
@@ -52,7 +52,7 @@ function saveItem(element) {
     })
     .then(data => {
       clearInterval(intervalId);
-      element.textContent = "saved!";
+      element.textContent = "archived!";
     })
     .catch(error => {
       console.error(error);
