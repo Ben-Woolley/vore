@@ -15,7 +15,7 @@ go to <a href="/feeds">/feeds</a> to add your first feed!
 {{ range .Data.Items }}
 	<li{{ if and $.LoggedIn (index $.Data.ReadItems .Link) }} class="read"{{ end }}>
 	<a href="/read/{{ .Link | escapeURL }}">
-		{{ .Title }}
+		{{ if .Title }} {{ .Title }} {{ else }} (empty title) {{ end }}
 	</a>
 	<br>
 	<span class=puny title="{{ .Date }}">
