@@ -22,16 +22,19 @@ go to <a href="/feeds">/feeds</a> to add your first feed!
 		published {{ .Date | timeSince }} via
 		<a href="//{{ .Link | printDomain }}">
 			{{ .Link | printDomain }}</a>
+		{{ if $.LoggedIn }}
 		| <a href="#"
 			data-save-url="/save/{{ .Link | escapeURL }}"
 			onclick="saveItem(this); return false;">
 			archive
 		</a>
+		{{ end }}
 	</span>
 	</li>
 {{ end }}
 </ul>
 
+{{ if $.LoggedIn }}
 <script>
 function saveItem(element) {
   const url = element.dataset.saveUrl;
@@ -61,6 +64,7 @@ function saveItem(element) {
     });
 }
 </script>
+{{ end }}
 
 {{ template "tail" . }}
 {{ end }}
