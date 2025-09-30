@@ -33,7 +33,7 @@ func (r *Reaper) fetchFunc() rss.FetchFunc {
 			return nil, err
 		}
 
-		req.Header.Set("User-Agent", "Vore")
+		req.Header.Set("User-Agent", "vore: feed fetcher")
 
 		fid, exists := r.db.GetFeedIDAndExists(url)
 		if exists {

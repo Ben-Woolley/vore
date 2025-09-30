@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html"
 	"html/template"
 	"log"
 	"math/rand"
@@ -14,13 +15,14 @@ import (
 	"strings"
 	"time"
 
+	"git.j3s.sh/vore/favicon"
 	"git.j3s.sh/vore/lib"
 	"git.j3s.sh/vore/reaper"
 	"git.j3s.sh/vore/rss"
 	"git.j3s.sh/vore/sqlite"
 	"git.j3s.sh/vore/wayback"
 	"golang.org/x/crypto/bcrypt"
-	"golang.org/x/net/html"
+	nethtml "golang.org/x/net/html"
 )
 
 type Site struct {
@@ -32,6 +34,9 @@ type Site struct {
 
 	// site database handle
 	db *sqlite.DB
+
+	// favicon fetcher for caching favicons
+	faviconFetcher *favicon.FaviconFetcher
 }
 
 type Save struct {
@@ -47,11 +52,24 @@ func New() *Site {
 	// - synchronous=NORMAL: "The synchronous=NORMAL setting is a good choice for most applications running in WAL mode."
 	// - cache_size=-64000: 64MB ram for db cache (yum yum more perf)
 	db := sqlite.New("vore.db?_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)&_pragma=busy_timeout(5000)&_pragma=synchronous(NORMAL)&_pragma=cache_size(-64000)")
+
+	// init favicon fetcher
+	faviconFetcher := favicon.NewFaviconFetcher()
+
 	s := Site{
-		title:  "vore",
-		reaper: reaper.New(db),
-		db:     db,
+		title:          "vore",
+		reaper:         reaper.New(db),
+		db:             db,
+		faviconFetcher: faviconFetcher,
 	}
+
+	// favi fetchy - every day or so
+	go func() {
+		log.Println("favicon: starting favicon fetch for all feed domains")
+		feedURLs := db.GetAllFeedURLs()
+		faviconFetcher.FetchFaviconsForDomains(feedURLs)
+	}()
+
 	return &s
 }
 
@@ -177,12 +195,12 @@ func (s *Site) userHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	items := s.reaper.TrimFuturePosts(s.reaper.SortFeedItemsByDate(s.reaper.GetUserFeeds(username)))
-	
+
 	var readItems map[string]bool
 	if s.loggedIn(r) {
 		readItems = s.db.GetUserReadItems(s.username(r))
 	}
-	
+
 	data := struct {
 		User      string
 		Items     []*rss.Item
@@ -338,7 +356,7 @@ func (s *Site) fingerHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		doc, err := html.Parse(resp.Body)
+		doc, err := nethtml.Parse(resp.Body)
 		if err != nil {
 			http.Error(w, "failed to parse HTML: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -368,11 +386,11 @@ func (s *Site) fingerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func discoverFeeds(doc *html.Node, base *url.URL) []string {
+func discoverFeeds(doc *nethtml.Node, base *url.URL) []string {
 	var feeds []string
-	var f func(*html.Node)
-	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "link" {
+	var f func(*nethtml.Node)
+	f = func(n *nethtml.Node) {
+		if n.Type == nethtml.ElementNode && n.Data == "link" {
 			var rel, typ, href string
 			for _, attr := range n.Attr {
 				switch attr.Key {
@@ -480,10 +498,11 @@ func (s *Site) register(username string, password string) error {
 // handler should do tbh.
 func (s *Site) renderPage(w http.ResponseWriter, r *http.Request, page string, data any) {
 	funcMap := template.FuncMap{
-		"printDomain": s.printDomain,
-		"timeSince":   s.timeSince,
-		"trimSpace":   strings.TrimSpace,
-		"escapeURL":   url.QueryEscape,
+		"printDomain":   s.printDomain,
+		"timeSince":     s.timeSince,
+		"trimSpace":     strings.TrimSpace,
+		"escapeURL":     url.QueryEscape,
+		"faviconForURL": s.faviconForURL,
 	}
 
 	tmplFiles := filepath.Join("files", "*.tmpl.html")
@@ -526,6 +545,23 @@ func (s *Site) printDomain(rawURL string) string {
 	trimmedStr = strings.TrimPrefix(trimmedStr, "https://")
 
 	return strings.Split(trimmedStr, "/")[0]
+}
+
+// faviconForURL returns the cached favicon data URL for a given URL's domain
+func (s *Site) faviconForURL(rawURL string) template.HTML {
+	domain := s.printDomain(rawURL)
+	if domain == "" {
+		return template.HTML("")
+	}
+	faviconDataURL := s.faviconFetcher.GetFaviconDataURL(domain)
+	if faviconDataURL == "" {
+		return template.HTML("")
+	}
+
+	imgTag := fmt.Sprintf(`<img src="%s" alt="" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;">`,
+		html.EscapeString(faviconDataURL))
+
+	return template.HTML(imgTag)
 }
 
 func (s *Site) timeSince(t time.Time) string {
