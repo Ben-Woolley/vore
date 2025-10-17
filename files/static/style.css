@@ -39,8 +39,45 @@ ul li {
   font-size: 1.1rem;
 }
 
+ul li.read a {
+  color: #8B5A9B;
+}
+
+ul li.read a:visited {
+  color: #8B5A9B;
+}
+
 nav a {
   color: #000;
+}
+
+.changelog-marquee {
+  font-size: 0.8rem;
+  margin: 0.5rem 0;
+  background-color: #ffff99;
+  border: 1px dashed #ff6600;
+  padding: 0.2rem;
+}
+
+.changelog-marquee a {
+  color: #ff6600;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.changelog-marquee a:hover {
+  background-color: #ff6600;
+  color: #ffff99;
+}
+
+.changelog-entry {
+  margin-bottom: 1.5rem;
+}
+
+.changelog-entry h4 {
+  margin-bottom: 0.5rem;
+  color: #666;
+  font-size: 0.9rem;
 }
 
 nav .left {
@@ -85,6 +122,32 @@ nav .right {
   }
 
   .puny {
+    color: #a0a0a0;
+  }
+
+  ul li.read a {
+    color: #B894D1;
+  }
+
+  ul li.read a:visited {
+    color: #B894D1;
+  }
+
+  .changelog-marquee {
+    background-color: #444;
+    border-color: #ff9900;
+  }
+
+  .changelog-marquee a {
+    color: #ff9900;
+  }
+
+  .changelog-marquee a:hover {
+    background-color: #ff9900;
+    color: #444;
+  }
+
+  .changelog-entry h4 {
     color: #a0a0a0;
   }
 }

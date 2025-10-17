@@ -1,0 +1,35 @@
+{{ define "changelog" }}
+{{ template "head" . }}
+{{ template "nav" . }}
+
+<h3>changelog</h3>
+
+<div class="changelog-entry">
+  <h3>august 2025</h3>
+  <ul>
+    <li>added read tracking - articles you've clicked on now appear purple across all your devices</li>
+    <li>renamed "settings" to "feeds" (old urls redirect automatically)</li>
+    <li>renamed "saves" to "archive" (old urls redirect automatically)</li>
+    <li>changed "save" button to "archive" button, "saving..." to "archiving..."</li>
+  </ul>
+</div>
+
+<div class="changelog-entry">
+  <h3>february 2025</h3>
+  <ul>
+    <li>archive.is -> archive.org</li>
+    <li>make save async</li>
+    <li>replace "discovery" with "finger"</li>
+  </ul>
+</div>
+
+
+<div class="changelog-entry">
+  <h3>earlier</h3>
+  <ul>
+    <li>lots of other stuff happened but who's counting</li>
+  </ul>
+</div>
+
+{{ template "tail" . }}
+{{ end }}

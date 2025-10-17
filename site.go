@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html"
 	"html/template"
 	"log"
 	"math/rand"
@@ -14,13 +15,14 @@ import (
 	"strings"
 	"time"
 
+	"git.j3s.sh/vore/favicon"
 	"git.j3s.sh/vore/lib"
 	"git.j3s.sh/vore/reaper"
 	"git.j3s.sh/vore/rss"
 	"git.j3s.sh/vore/sqlite"
 	"git.j3s.sh/vore/wayback"
 	"golang.org/x/crypto/bcrypt"
-	"golang.org/x/net/html"
+	nethtml "golang.org/x/net/html"
 )
 
 type Site struct {
@@ -32,6 +34,9 @@ type Site struct {
 
 	// site database handle
 	db *sqlite.DB
+
+	// favicon fetcher for caching favicons
+	faviconFetcher *favicon.FaviconFetcher
 }
 
 type Save struct {
@@ -51,11 +56,23 @@ func New() *Site {
 	// - synchronous=NORMAL: "The synchronous=NORMAL setting is a good choice for most applications running in WAL mode."
 	// - cache_size=-64000: 64MB ram for db cache (yum yum more perf)
 	db := sqlite.New("data/vore.db?_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)&_pragma=busy_timeout(5000)&_pragma=synchronous(NORMAL)&_pragma=cache_size(-64000)")
+
+	// init favicon fetcher
+	faviconFetcher := favicon.NewFaviconFetcher()
 	s := Site{
-		title:  "vore",
-		reaper: reaper.New(db),
-		db:     db,
+		title:          "vore",
+		reaper:         reaper.New(db),
+		db:             db,
+		faviconFetcher: faviconFetcher,
 	}
+
+	// favi fetchy - every day or so
+	go func() {
+		log.Println("favicon: starting favicon fetch for all feed domains")
+		feedURLs := db.GetAllFeedURLs()
+		faviconFetcher.FetchFaviconsForDomains(feedURLs)
+	}()
+
 	return &s
 }
 
@@ -181,12 +198,20 @@ func (s *Site) userHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	items := s.reaper.TrimFuturePosts(s.reaper.SortFeedItemsByDate(s.reaper.GetUserFeeds(username)))
+
+	var readItems map[string]bool
+	if s.loggedIn(r) {
+		readItems = s.db.GetUserReadItems(s.username(r))
+	}
+
 	data := struct {
-		User  string
-		Items []*rss.Item
+		User      string
+		Items     []*rss.Item
+		ReadItems map[string]bool
 	}{
-		User:  username,
-		Items: items,
+		User:      username,
+		Items:     items,
+		ReadItems: readItems,
 	}
 
 	s.renderPage(w, r, "user", data)
@@ -200,7 +225,7 @@ func (s *Site) userSavesHandler(w http.ResponseWriter, r *http.Request) {
 
 	username := s.username(r)
 	saves := s.db.GetUserSavedItems(username)
-	s.renderPage(w, r, "saves", saves)
+	s.renderPage(w, r, "archive", saves)
 }
 
 func (s *Site) settingsHandler(w http.ResponseWriter, r *http.Request) {
@@ -211,7 +236,7 @@ func (s *Site) settingsHandler(w http.ResponseWriter, r *http.Request) {
 
 	var feeds []*rss.Feed
 	feeds = s.reaper.GetUserFeeds(s.username(r))
-	s.renderPage(w, r, "settings", feeds)
+	s.renderPage(w, r, "feeds", feeds)
 }
 
 // TODO: show diff before submission (like tf plan)
@@ -267,7 +292,7 @@ func (s *Site) settingsSubmitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	http.Redirect(w, r, "/feeds", http.StatusSeeOther)
 }
 
 func (s *Site) feedDetailsHandler(w http.ResponseWriter, r *http.Request) {
@@ -334,7 +359,7 @@ func (s *Site) fingerHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		doc, err := html.Parse(resp.Body)
+		doc, err := nethtml.Parse(resp.Body)
 		if err != nil {
 			http.Error(w, "failed to parse HTML: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -364,11 +389,11 @@ func (s *Site) fingerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func discoverFeeds(doc *html.Node, base *url.URL) []string {
+func discoverFeeds(doc *nethtml.Node, base *url.URL) []string {
 	var feeds []string
-	var f func(*html.Node)
-	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "link" {
+	var f func(*nethtml.Node)
+	f = func(n *nethtml.Node) {
+		if n.Type == nethtml.ElementNode && n.Data == "link" {
 			var rel, typ, href string
 			for _, attr := range n.Attr {
 				switch attr.Key {
@@ -476,10 +501,11 @@ func (s *Site) register(username string, password string) error {
 // handler should do tbh.
 func (s *Site) renderPage(w http.ResponseWriter, r *http.Request, page string, data any) {
 	funcMap := template.FuncMap{
-		"printDomain": s.printDomain,
-		"timeSince":   s.timeSince,
-		"trimSpace":   strings.TrimSpace,
-		"escapeURL":   url.QueryEscape,
+		"printDomain":   s.printDomain,
+		"timeSince":     s.timeSince,
+		"trimSpace":     strings.TrimSpace,
+		"escapeURL":     url.QueryEscape,
+		"faviconForURL": s.faviconForURL,
 	}
 
 	tmplFiles := filepath.Join("files", "*.tmpl.html")
@@ -522,6 +548,23 @@ func (s *Site) printDomain(rawURL string) string {
 	trimmedStr = strings.TrimPrefix(trimmedStr, "https://")
 
 	return strings.Split(trimmedStr, "/")[0]
+}
+
+// faviconForURL returns the cached favicon data URL for a given URL's domain
+func (s *Site) faviconForURL(rawURL string) template.HTML {
+	domain := s.printDomain(rawURL)
+	if domain == "" {
+		return template.HTML("")
+	}
+	faviconDataURL := s.faviconFetcher.GetFaviconDataURL(domain)
+	if faviconDataURL == "" {
+		return template.HTML("")
+	}
+
+	imgTag := fmt.Sprintf(`<img src="%s" alt="" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;">`,
+		html.EscapeString(faviconDataURL))
+
+	return template.HTML(imgTag)
 }
 
 func (s *Site) timeSince(t time.Time) string {
@@ -570,6 +613,44 @@ func (s *Site) renderErr(w http.ResponseWriter, error string, code int) {
 	}
 	log.Println(prefix + error)
 	http.Error(w, prefix+error, code)
+}
+
+func (s *Site) settingsRedirectHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/feeds", http.StatusMovedPermanently)
+}
+
+func (s *Site) settingsSubmitRedirectHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/feeds/submit", http.StatusMovedPermanently)
+}
+
+func (s *Site) savesRedirectHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/archive", http.StatusMovedPermanently)
+}
+
+func (s *Site) readHandler(w http.ResponseWriter, r *http.Request) {
+	if !s.loggedIn(r) {
+		s.renderErr(w, "", http.StatusUnauthorized)
+		return
+	}
+
+	username := s.username(r)
+	encodedURL := r.PathValue("url")
+	decodedURL, err := url.QueryUnescape(encodedURL)
+	if err != nil {
+		s.renderErr(w, "invalid url", http.StatusBadRequest)
+		return
+	}
+
+	err = s.db.MarkItemRead(username, decodedURL)
+	if err != nil {
+		log.Println("error marking item read:", err)
+	}
+
+	http.Redirect(w, r, decodedURL, http.StatusSeeOther)
+}
+
+func (s *Site) changelogHandler(w http.ResponseWriter, r *http.Request) {
+	s.renderPage(w, r, "changelog", nil)
 }
 
 func (s *Site) randomCutePhrase() string {

@@ -7,31 +7,34 @@
 <p>
 you don't seem to have any feeds yet.
 
-go to <a href="/settings">/settings</a> to add your first feed!
+go to <a href="/feeds">/feeds</a> to add your first feed!
 </p>
 {{ end }}
 {{ end }}
 <ul>
 {{ range .Data.Items }}
-	<li>
-	<a href="{{ .Link }}">
-		{{ .Title }}
+	<li{{ if and $.LoggedIn (index $.Data.ReadItems .Link) }} class="read"{{ end }}>
+	<a href="{{ if $.LoggedIn }}/read/{{ .Link | escapeURL }}{{ else }}{{ .Link }}{{ end }}">
+		{{ .Link | faviconForURL }}{{ if .Title }} {{ .Title }} {{ else }} (empty title) {{ end }}
 	</a>
 	<br>
 	<span class=puny title="{{ .Date }}">
 		published {{ .Date | timeSince }} via
 		<a href="//{{ .Link | printDomain }}">
 			{{ .Link | printDomain }}</a>
+		{{ if $.LoggedIn }}
 		| <a href="#"
 			data-save-url="/save/{{ .Link | escapeURL }}"
 			onclick="saveItem(this); return false;">
-			save
+			archive
 		</a>
+		{{ end }}
 	</span>
 	</li>
 {{ end }}
 </ul>
 
+{{ if $.LoggedIn }}
 <script>
 function saveItem(element) {
   const url = element.dataset.saveUrl;
@@ -39,7 +42,7 @@ function saveItem(element) {
   let index = 0;
 
   const intervalId = setInterval(() => {
-    element.textContent = "saving" + states[index];
+    element.textContent = "archiving" + states[index];
     index = (index + 1) % states.length;
   }, 300);
 
@@ -52,7 +55,7 @@ function saveItem(element) {
     })
     .then(data => {
       clearInterval(intervalId);
-      element.textContent = "saved!";
+      element.textContent = "archived!";
     })
     .catch(error => {
       console.error(error);
@@ -61,6 +64,7 @@ function saveItem(element) {
     });
 }
 </script>
+{{ end }}
 
 {{ template "tail" . }}
 {{ end }}
