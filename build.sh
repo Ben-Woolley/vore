@@ -1,10 +1,11 @@
 #!/bin/bash
+set -e
 
-# Build vore to use in docker image
-go build .
+# Download dependencies if not already pulled
+go mod vendor
 
-# Build image
-docker build -t ben-woolley/vore:latest
+# Build image (uses vendor modules)
+docker build . -t ben-woolley/vore:latest
 
 # Save image as tar file for import onto server
-docker save -o . ben-woolley/vore:latest
+docker save ben-woolley/vore:latest > vore.tar
