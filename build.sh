@@ -8,4 +8,4 @@ go mod vendor
 docker build . -t ben-woolley/vore:latest
 
 # Save image as tar file for import onto server
-docker save ben-woolley/vore:latest > vore.tar
+docker save -o ./vore.tar ben-woolley/vore:latest

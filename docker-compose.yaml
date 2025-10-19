@@ -1,0 +1,7 @@
+services:
+  vore:
+    image: ben-woolley/vore:latest
+    ports: 
+      - 5544:5544
+    volumes:
+      - ./data/:/app/data/
