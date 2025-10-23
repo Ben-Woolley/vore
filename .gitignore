@@ -1,8 +1,5 @@
 vore
 vore.db*
 go_test.db
-vore.tar
 vendor
-
-.idea
 data/
